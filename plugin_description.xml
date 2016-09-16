@@ -1,0 +1,6 @@
+<library path="librviz_ortho_view_controller">
+  <class name="rviz_ortho_view_controller/Ortho"
+         type="rviz_ortho_view_controller::OrthoViewController"
+         base_class_type="rviz::ViewController">
+    <description>An orthographic view controller</description>
+</library>
