@@ -2,12 +2,15 @@ cmake_minimum_required(VERSION 2.8.3)
 project(rviz_ortho_view_controller)
 
 # Package
-set(CATKIN_DEPENDENCIES roscpp rviz)
+set(CATKIN_DEPENDENCIES pluginlib roscpp rviz)
 
 find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDENCIES})
 find_package(Qt4 REQUIRED QtGui)
 
-catkin_package(INCLUDE_DIRS include)
+catkin_package(INCLUDE_DIRS include
+               LIBRARIES ${PROJECT_NAME}
+               CATKIN_DEPENDS ${CATKIN_DEPENDENCIES}
+               DEPENDS Qt4)
 
 # Build
 include_directories(include
