@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <package format="2">
   <name>rviz_ortho_view_controller</name>
-  <version>0.0.1</version>
+  <version>0.1.0</version>
   <description>An orthographic camera view controller for RViz</description>
   <maintainer email="andrewjshort@gmail.com">Andrew Short</maintainer>
 
