@@ -32,12 +32,10 @@ static const char *STATUS_SHIFT = "<b>Left-Click:</b> Rotate R.  <b>Middle-Click
                                   "<b>Right-Click:</b> Move Z.  <b>Mouse Wheel:</b> Zoom.";
 
 OrthoViewController::OrthoViewController()
-  : plane_property_(new rviz::EnumProperty("Plane", "none", "Optionally lock the view to a plane", this)),
-    centre_property_(new rviz::VectorProperty("Centre", Ogre::Vector3::ZERO, "The focal point of the camera", this)),
-    yaw_property_(new rviz::FloatProperty("Yaw", 0, "Angle around X axis to rotate", this)),
-    pitch_property_(new rviz::FloatProperty("Pitch", 0, "Angle around Y axis to rotate", this)),
-    roll_property_(new rviz::FloatProperty("Roll", 0, "Angle around Z axis to rotate", this)),
-    scale_property_(new rviz::FloatProperty("Scale", DEFAULT_SCALE, "How much to scale up the scene", this))
+  : plane_property_(new rviz::EnumProperty("Plane", "none", "Optionally lock the view to a plane", this))
+  , centre_property_(new rviz::VectorProperty("Centre", Ogre::Vector3::ZERO, "The focal point of the camera", this))
+  , orientation_property_(new rviz::QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY, "", this))
+  , scale_property_(new rviz::FloatProperty("Scale", DEFAULT_SCALE, "How much to scale up the scene", this))
 {
   plane_property_->addOption("none", PLANE_NONE);
   plane_property_->addOption("XY", PLANE_XY);
@@ -56,7 +54,7 @@ void OrthoViewController::onInitialize()
   FramePositionTrackingViewController::onInitialize();
 
   camera_->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
-  camera_->setFixedYawAxis(false);
+  // camera_->setFixedYawAxis(false);
 
   centre_shape_.reset(new rviz::Shape(rviz::Shape::Sphere, context_->getSceneManager(), target_scene_node_));
   centre_shape_->setScale(Ogre::Vector3(0.05f, 0.05f, 0.01f));
@@ -97,18 +95,28 @@ void OrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &e)
   bool rotate_z = e.shift() || getPlane() != PLANE_NONE;
   auto rotate_cursor = rotate_z ? Rotate2D : Rotate3D;
 
+  auto rotate = [this](double angle, const Ogre::Vector3 &axis) {
+    const auto &orientation = orientation_property_->getQuaternion();
+
+    Ogre::Quaternion q;
+    q.FromAngleAxis(Ogre::Radian(angle), orientation * axis);
+    q.normalise();
+
+    orientation_property_->setQuaternion(q * orientation);
+  };
+
   if (e.left())
   {
     setCursor(rotate_cursor);
 
     if (rotate_z)
     {
-      roll_property_->setFloat(rviz::mapAngleTo0_2Pi(roll_property_->getFloat() + 0.005 * dx));
+      rotate(0.005 * dx, Ogre::Vector3::UNIT_Z);
     }
     else
     {
-      yaw_property_->setFloat(rviz::mapAngleTo0_2Pi(yaw_property_->getFloat() - 0.005 * dy));
-      pitch_property_->setFloat(rviz::mapAngleTo0_2Pi(pitch_property_->getFloat() - 0.005 * dx));
+      rotate(-0.005 * dx, Ogre::Vector3::UNIT_Y);
+      rotate(-0.005 * dy, Ogre::Vector3::UNIT_X);
     }
   }
   else if (e.middle() || (e.left() && e.shift()))
@@ -116,7 +124,7 @@ void OrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &e)
     setCursor(MoveXY);
 
     auto scale = scale_property_->getFloat();
-    auto movement = getOrientation() * Ogre::Vector3(-dx / scale, dy / scale, 0);
+    auto movement = orientation_property_->getQuaternion() * Ogre::Vector3(-dx / scale, dy / scale, 0);
 
     centre_property_->add(movement);
   }
@@ -130,7 +138,7 @@ void OrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &e)
     setCursor(MoveZ);
 
     auto scale = scale_property_->getFloat();
-    auto movement = getOrientation() * Ogre::Vector3(0, 0, dy / scale);
+    auto movement = orientation_property_->getQuaternion() * Ogre::Vector3(0, 0, dy / scale);
 
     centre_property_->add(movement);
   }
@@ -161,9 +169,7 @@ void OrthoViewController::reset()
 {
   plane_property_->setString("none");
   centre_property_->setVector(Ogre::Vector3::ZERO);
-  yaw_property_->setFloat(0);
-  pitch_property_->setFloat(0);
-  roll_property_->setFloat(0);
+  orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
   scale_property_->setFloat(DEFAULT_SCALE);
 }
 
@@ -175,11 +181,7 @@ void OrthoViewController::mimic(rviz::ViewController *source)
   {
     plane_property_->setString(source_ortho->plane_property_->getString());
     centre_property_->setVector(source_ortho->centre_property_->getVector());
-
-    yaw_property_->setFloat(source_ortho->yaw_property_->getFloat());
-    pitch_property_->setFloat(source_ortho->pitch_property_->getFloat());
-    roll_property_->setFloat(source_ortho->roll_property_->getFloat());
-
+    orientation_property_->setQuaternion(source_ortho->orientation_property_->getQuaternion());
     scale_property_->setFloat(source_ortho->scale_property_->getFloat());
   }
   else
@@ -207,7 +209,7 @@ void OrthoViewController::update(float dt, float ros_dt)
 
   // Set the camera pose.
   auto centre = centre_property_->getVector();
-  auto orientation = getOrientation();
+  auto orientation = orientation_property_->getQuaternion();
 
   camera_->setOrientation(orientation);
   camera_->setPosition(centre + orientation * Ogre::Vector3::UNIT_Z * VIEW_DISTANCE);
@@ -220,29 +222,19 @@ void OrthoViewController::onPlaneChanged()
   auto plane = getPlane();
   bool locked = plane != PLANE_NONE;
 
-  yaw_property_->setReadOnly(locked);
-  yaw_property_->setHidden(locked);
-
-  pitch_property_->setReadOnly(locked);
-  pitch_property_->setHidden(locked);
+  orientation_property_->setReadOnly(locked);
+  orientation_property_->setHidden(locked);
 
   if (locked)
   {
-    yaw_property_->setFloat(0);
-    pitch_property_->setFloat(0);
-
+    // TODO fix XZ and YZ planes.
+    if (plane == PLANE_XY)
+      orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
     if (plane == PLANE_XZ)
-      yaw_property_->setFloat(M_PI / 2);
+      orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
     else if (plane == PLANE_YZ)
-      pitch_property_->setFloat(M_PI / 2);
+      orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
   }
-}
-
-Ogre::Quaternion OrthoViewController::getOrientation() const
-{
-  return Ogre::Quaternion(Ogre::Radian(yaw_property_->getFloat()), Ogre::Vector3::UNIT_X) *
-         Ogre::Quaternion(Ogre::Radian(pitch_property_->getFloat()), Ogre::Vector3::UNIT_Y) *
-         Ogre::Quaternion(Ogre::Radian(roll_property_->getFloat()), Ogre::Vector3::UNIT_Z);
 }
 
 OrthoViewController::Plane OrthoViewController::getPlane() const

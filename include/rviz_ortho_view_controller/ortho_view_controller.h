@@ -9,6 +9,7 @@ namespace rviz
 {
 class EnumProperty;
 class FloatProperty;
+class QuaternionProperty;
 class Shape;
 class VectorProperty;
 }
@@ -48,17 +49,12 @@ private:
     PLANE_YZ
   };
 
-  /// Gets the camera rotation from the RPY properties.
-  Ogre::Quaternion getOrientation() const;
-
   /// Gets the plane this view controller is currently locked to.
   Plane getPlane() const;
 
   rviz::EnumProperty *plane_property_;
   rviz::VectorProperty *centre_property_;
-  rviz::FloatProperty *yaw_property_;
-  rviz::FloatProperty *pitch_property_;
-  rviz::FloatProperty *roll_property_;
+  rviz::QuaternionProperty *orientation_property_;
   rviz::FloatProperty *scale_property_;
 
   bool dragging_ = false;

@@ -4,6 +4,10 @@ An RViz plugin which provides an orthographic camera view controller. In contras
 included in RViz, the view controller allows arbitrary orientations, as well as the ability to lock the view to a
 specific plane.
 
+## Requirements
+
+* ROS Kinetic
+
 ## Usage
 
 Once the plugin is installed, open RViz and select "Ortho" from the "Type" dropdown in the "Views" panel. If you want

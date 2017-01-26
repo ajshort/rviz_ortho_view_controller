@@ -5,22 +5,21 @@ project(rviz_ortho_view_controller)
 set(CATKIN_DEPENDENCIES pluginlib roscpp rviz)
 
 find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDENCIES})
-find_package(Qt4 REQUIRED QtGui)
+find_package(Qt5Core)
+find_package(Qt5Gui)
 
 catkin_package(INCLUDE_DIRS include
                LIBRARIES ${PROJECT_NAME}
-               CATKIN_DEPENDS ${CATKIN_DEPENDENCIES}
-               DEPENDS Qt4)
+               CATKIN_DEPENDS ${CATKIN_DEPENDENCIES})
 
 # Build
 include_directories(include
                     ${catkin_INCLUDE_DIRS}
-                    ${CMAKE_CURRENT_BINARY_DIR}
-                    ${QT_INCLUDE_DIR})
+                    ${CMAKE_CURRENT_BINARY_DIR})
 
-qt4_wrap_cpp(MOC_FILES include/${PROJECT_NAME}/ortho_view_controller.h)
+qt5_wrap_cpp(MOC_FILES include/${PROJECT_NAME}/ortho_view_controller.h)
 add_library(${PROJECT_NAME} src/ortho_view_controller.cpp ${MOC_FILES})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Qt4::QtGui)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} Qt5::Core Qt5::Gui)
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-std=c++11")
 
 # Install
