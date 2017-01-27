@@ -227,13 +227,15 @@ void OrthoViewController::onPlaneChanged()
 
   if (locked)
   {
+    auto orientation = Ogre::Quaternion::IDENTITY;
+
     // TODO fix XZ and YZ planes.
-    if (plane == PLANE_XY)
-      orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
     if (plane == PLANE_XZ)
-      orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
+      orientation.FromAngleAxis(Ogre::Radian(M_PI / 2), Ogre::Vector3::UNIT_X);
     else if (plane == PLANE_YZ)
-      orientation_property_->setQuaternion(Ogre::Quaternion::IDENTITY);
+      orientation.FromAngleAxis(Ogre::Radian(M_PI / 2), Ogre::Vector3::UNIT_Y);
+
+    orientation_property_->setQuaternion(orientation);
   }
 }
 
