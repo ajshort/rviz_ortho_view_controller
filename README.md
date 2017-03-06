@@ -6,7 +6,7 @@ specific plane.
 
 ## Requirements
 
-* ROS Kinetic
+* ROS Jade or Kinetic
 
 ## Usage
 
