@@ -3,4 +3,5 @@
          type="rviz_ortho_view_controller::OrthoViewController"
          base_class_type="rviz::ViewController">
     <description>An orthographic view controller</description>
+  </class>
 </library>
