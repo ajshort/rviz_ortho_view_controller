@@ -7,6 +7,7 @@
 
 namespace rviz
 {
+class BoolProperty;
 class EnumProperty;
 class FloatProperty;
 class QuaternionProperty;
@@ -56,6 +57,7 @@ private:
   rviz::VectorProperty *centre_property_;
   rviz::QuaternionProperty *orientation_property_;
   rviz::FloatProperty *scale_property_;
+  rviz::BoolProperty *scroll_property_;
 
   bool dragging_ = false;
 
