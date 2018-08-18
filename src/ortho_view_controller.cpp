@@ -12,6 +12,7 @@
 #include <rviz/geometry.h>
 #include <rviz/ogre_helpers/orthographic.h>
 #include <rviz/ogre_helpers/shape.h>
+#include <rviz/properties/bool_property.h>
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/quaternion_property.h>
@@ -36,6 +37,7 @@ OrthoViewController::OrthoViewController()
   , centre_property_(new rviz::VectorProperty("Centre", Ogre::Vector3::ZERO, "The focal point of the camera", this))
   , orientation_property_(new rviz::QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY, "", this))
   , scale_property_(new rviz::FloatProperty("Scale", DEFAULT_SCALE, "How much to scale up the scene", this))
+  , scroll_property_(new rviz::BoolProperty("Left-button scroll", false, "Use the left mouse button to scroll", this))
 {
   plane_property_->addOption("none", PLANE_NONE);
   plane_property_->addOption("XY", PLANE_XY);
@@ -105,7 +107,20 @@ void OrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &e)
     orientation_property_->setQuaternion(q * orientation);
   };
 
-  if (e.left())
+  bool zoom = e.right() && !e.shift();
+  bool move_z = e.right() && e.shift();
+  bool scroll = e.middle() || (e.left() && e.shift());
+  bool rotate_view = e.left();
+
+  // flip the left and middle buttons
+  if (scroll_property_->getBool())
+  {
+    bool tmp_scroll = scroll;
+    scroll = rotate_view;
+    rotate_view = tmp_scroll;
+  }
+
+  if (rotate_view)
   {
     setCursor(rotate_cursor);
 
@@ -119,7 +134,7 @@ void OrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &e)
       rotate(-0.005 * dy, Ogre::Vector3::UNIT_X);
     }
   }
-  else if (e.middle() || (e.left() && e.shift()))
+  else if (scroll)
   {
     setCursor(MoveXY);
 
@@ -128,12 +143,12 @@ void OrthoViewController::handleMouseEvent(rviz::ViewportMouseEvent &e)
 
     centre_property_->add(movement);
   }
-  else if (e.right() && !e.shift())
+  else if (zoom)
   {
     setCursor(Zoom);
     scale_property_->multiply(1 - 0.01 * dy);
   }
-  else if (e.right() && e.shift())
+  else if (move_z)
   {
     setCursor(MoveZ);
 
